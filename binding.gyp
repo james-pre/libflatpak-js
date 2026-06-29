@@ -13,7 +13,7 @@
       ],
       "cflags_cc": [
         "<!@(pkg-config --cflags flatpak)",
-        "-std=c++11",
+        "-std=c++17",
         "-fexceptions",
         "-Wall",
         "-Wextra"

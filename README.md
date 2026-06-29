@@ -92,18 +92,16 @@ try {
 ### Example 1: Adding a Remote Repository
 
 ```javascript
-import { getSystemInstallation, Remote } from "libflatpak";
+import { getSystemInstallations, Remote } from "libflatpak";
 
 async function addFlathubRemote() {
-    // `using` automatically frees these when the block exits (including on
-    // error), so there is no need for an explicit try/finally + free().
-    using installation = getSystemInstallation();
+    const [installation] = getSystemInstallations();
     if (!installation) {
         throw new Error("No system installation available");
     }
 
-    // Create a new remote object
-    using remote = Remote.create("flathub");
+    // Create a new remote object with `new`
+    const remote = new Remote("flathub");
 
     // Configure the remote
     remote.setUrl("https://dl.flathub.org/repo/");
@@ -134,66 +132,59 @@ addFlathubRemote().catch(console.error);
 ### Example 2: Installing a Package
 
 ```javascript
-import { getSystemInstallation, Transaction } from "libflatpak";
+import { getSystemInstallations, Transaction } from "libflatpak";
 
 async function installApplication(appId) {
-    const installation = getSystemInstallation();
+    const [installation] = getSystemInstallations();
     if (!installation) {
         throw new Error("No system installation available");
     }
 
-    try {
-        // Download the .flatpakref file
-        const flatpakrefUrl = `https://dl.flathub.org/repo/appstream/${appId}.flatpakref`;
-        console.log(`Downloading ${flatpakrefUrl}...`);
+    // Download the .flatpakref file
+    const flatpakrefUrl = `https://dl.flathub.org/repo/appstream/${appId}.flatpakref`;
+    console.log(`Downloading ${flatpakrefUrl}...`);
 
-        const flatpakrefData = await fetch(flatpakrefUrl).then(res => res.bytes());
+    const flatpakrefData = await fetch(flatpakrefUrl).then(res => res.bytes());
 
-        // Create a transaction for this installation
-        const transaction = Transaction.create(installation, null);
+    // Create a transaction for this installation with `new`
+    const transaction = new Transaction(installation, null);
 
-        // Configure transaction options
-        transaction.setNoInteraction(false);
-        transaction.setAutoInstallSdk(true);
+    // Configure transaction options
+    transaction.setNoInteraction(false);
+    transaction.setAutoInstallSdk(true);
 
-        // Add the application to install
-        // flatpakrefData is a Buffer containing the .flatpakref file
-        const added = transaction.addInstallFlatpakref(flatpakrefData);
+    // Add the application to install
+    // flatpakrefData is a Buffer containing the .flatpakref file
+    const added = transaction.addInstallFlatpakref(flatpakrefData);
 
-        if (!added) {
-            throw new Error(`Failed to add installation for ${appId}`);
-        }
+    if (!added) {
+        throw new Error(`Failed to add installation for ${appId}`);
+    }
 
-        console.log(`Starting installation of ${appId}...`);
+    console.log(`Starting installation of ${appId}...`);
 
-        // Run the transaction
-        const success = transaction.run(null);
+    // Run the transaction
+    const success = transaction.run(null);
 
-        if (success) {
-            console.log(`Successfully installed ${appId}`);
+    if (success) {
+        console.log(`Successfully installed ${appId}`);
 
-            // Get the installed ref
-            const installedRef = installation.getInstalledRef(
-                0, // FLATPAK_REF_KIND_APP
-                appId,
-                "x86_64",
-                "stable",
-                null,
+        // Get the installed ref
+        const installedRef = installation.getInstalledRef(
+            0, // FLATPAK_REF_KIND_APP
+            appId,
+            "x86_64",
+            "stable",
+            null,
+        );
+
+        if (installedRef) {
+            console.log(
+                `Installed version: ${installedRef.getAppdataVersion()}`,
             );
-
-            if (installedRef) {
-                console.log(
-                    `Installed version: ${installedRef.getAppdataVersion()}`,
-                );
-                installedRef.free();
-            }
-        } else {
-            console.error(`Failed to install ${appId}`);
         }
-
-        transaction.free();
-    } finally {
-        installation.free();
+    } else {
+        console.error(`Failed to install ${appId}`);
     }
 }
 
@@ -201,30 +192,24 @@ async function installApplication(appId) {
 import { readFileSync } from "node:fs";
 
 async function installFromLocalFile(filePath) {
-    const installation = getSystemInstallation();
+    const [installation] = getSystemInstallations();
     if (!installation) {
         throw new Error("No system installation available");
     }
 
-    try {
-        // Read local .flatpakref file
-        const flatpakrefData = readFileSync(filePath);
+    // Read local .flatpakref file
+    const flatpakrefData = readFileSync(filePath);
 
-        const transaction = Transaction.create(installation, null);
-        transaction.setNoInteraction(false);
+    const transaction = new Transaction(installation, null);
+    transaction.setNoInteraction(false);
 
-        const added = transaction.addInstallFlatpakref(flatpakrefData);
+    const added = transaction.addInstallFlatpakref(flatpakrefData);
 
-        if (added) {
-            const success = transaction.run(null);
-            if (success) {
-                console.log("Installation from local file completed");
-            }
+    if (added) {
+        const success = transaction.run(null);
+        if (success) {
+            console.log("Installation from local file completed");
         }
-
-        transaction.free();
-    } finally {
-        installation.free();
     }
 }
 
@@ -236,88 +221,80 @@ async function installFromLocalFile(filePath) {
 ### Example 3: Getting App Data for Store
 
 ```javascript
-import { getSystemInstallation } from "libflatpak";
+import { getSystemInstallations } from "libflatpak";
 
 async function getAppStoreData() {
-    const installation = getSystemInstallation();
+    const [installation] = getSystemInstallations();
     if (!installation) {
         throw new Error("No system installation available");
     }
 
-    try {
-        // Get all installed applications
-        const installedRefs = installation.listInstalledRefs();
+    // Get all installed applications
+    const installedRefs = installation.listInstalledRefs();
 
-        const appData = [];
+    const appData = [];
 
-        for (const ref of installedRefs) {
-            // Only process applications (not runtimes)
-            if (ref.getKind() === 0) {
-                // FLATPAK_REF_KIND_APP
-                const appInfo = {
-                    id: ref.getName(),
-                    name: ref.getAppdataName() || ref.getName(),
-                    summary: ref.getAppdataSummary() || "",
-                    version: ref.getAppdataVersion() || "Unknown",
-                    license: ref.getAppdataLicense() || "",
-                    installSize: ref.getInstalledSize(),
-                    isCurrent: ref.getIsCurrent(),
-                    origin: ref.getOrigin(),
-                };
+    for (const ref of installedRefs) {
+        // Only process applications (not runtimes)
+        if (ref.getKind() === 0) {
+            // FLATPAK_REF_KIND_APP
+            const appInfo = {
+                id: ref.getName(),
+                name: ref.getAppdataName() || ref.getName(),
+                summary: ref.getAppdataSummary() || "",
+                version: ref.getAppdataVersion() || "Unknown",
+                license: ref.getAppdataLicense() || "",
+                installSize: ref.getInstalledSize(),
+                isCurrent: ref.getIsCurrent(),
+                origin: ref.getOrigin(),
+            };
 
-                // Try to load full appdata (may fail if not available)
-                try {
-                    const appdataBytes = ref.loadAppdata(null);
-                    if (appdataBytes && appdataBytes.length > 0) {
-                        appInfo.hasFullAppdata = true;
-                        // appdataBytes is a Buffer containing the appdata XML
-                        // You could parse it with an XML parser for more details
-                    }
-                } catch (err) {
-                    // Appdata not available or failed to load
-                    appInfo.hasFullAppdata = false;
+            // Try to load full appdata (may fail if not available)
+            try {
+                const appdataBytes = ref.loadAppdata(null);
+                if (appdataBytes && appdataBytes.length > 0) {
+                    appInfo.hasFullAppdata = true;
+                    // appdataBytes is a Buffer containing the appdata XML
+                    // You could parse it with an XML parser for more details
                 }
-
-                appData.push(appInfo);
-
-                console.log(
-                    `${appInfo.name} v${appInfo.version}: ${appInfo.summary}`,
-                );
+            } catch (err) {
+                // Appdata not available or failed to load
+                appInfo.hasFullAppdata = false;
             }
-        }
 
-        console.log(`\nTotal applications: ${appData.length}`);
-        return appData;
-    } finally {
-        installation.free();
+            appData.push(appInfo);
+
+            console.log(
+                `${appInfo.name} v${appInfo.version}: ${appInfo.summary}`,
+            );
+        }
     }
+
+    console.log(`\nTotal applications: ${appData.length}`);
+    return appData;
 }
 
 // Also get available applications from remotes
 async function getAvailableAppsFromRemote(remoteName) {
-    const installation = getSystemInstallation();
+    const [installation] = getSystemInstallations();
     if (!installation) {
         throw new Error("No system installation available");
     }
 
-    try {
-        // List remote refs (available applications)
-        const remoteRefs = installation.listRemoteRefsSync(remoteName, null);
+    // List remote refs (available applications)
+    const remoteRefs = installation.listRemoteRefsSync(remoteName, null);
 
-        console.log(`Available applications in ${remoteName}:`);
-        remoteRefs.forEach((ref) => {
-            if (ref.getKind() === 0) {
-                // FLATPAK_REF_KIND_APP
-                console.log(
-                    `- ${ref.getName()} (${ref.getDownloadSize()} bytes download)`,
-                );
-            }
-        });
+    console.log(`Available applications in ${remoteName}:`);
+    remoteRefs.forEach((ref) => {
+        if (ref.getKind() === 0) {
+            // FLATPAK_REF_KIND_APP
+            console.log(
+                `- ${ref.getName()} (${ref.getDownloadSize()} bytes download)`,
+            );
+        }
+    });
 
-        return remoteRefs;
-    } finally {
-        installation.free();
-    }
+    return remoteRefs;
 }
 
 // Usage
@@ -340,7 +317,6 @@ getAppStoreData()
 | `getDefaultArch(): string`                      | Default system architecture (e.g., "x86_64") |
 | `getSupportedArches(): string[]`                | Array of supported architectures             |
 | `getSystemInstallations(): Installation[]`      | All available system installations           |
-| `getSystemInstallation(): Installation \| null` | First system installation, if any            |
 | `errorQuark(): number`                          | Flatpak error domain quark                   |
 | `portalErrorQuark(): number`                    | Flatpak portal error domain quark            |
 | `parse(ref: string): Ref`                       | Parse a Flatpak ref string                   |
@@ -351,7 +327,10 @@ getAppStoreData()
 
 #### `Installation`
 
-Represents a Flatpak installation (system or user).
+Represents a Flatpak installation (system or user). Obtain instances via
+`getSystemInstallations()`, or construct one with `new Installation(path, user, cancellable?)`.
+Static factories are also available: `Installation.newSystem(cancellable?)`,
+`Installation.newSystemWithId(id, cancellable?)`, and `Installation.newUser(cancellable?)`.
 
 **Key Methods:**
 
@@ -368,6 +347,9 @@ Represents a Flatpak installation (system or user).
 
 Represents a remote repository.
 
+**Constructor:** `new Remote(name)` — create a new remote. Use
+`Remote.newFromFile(name, data)` to build one from `.flatpakrepo` contents.
+
 **Key Methods:**
 
 - `getName(): string` - Remote name
@@ -380,6 +362,9 @@ Represents a remote repository.
 #### `Transaction`
 
 Manages installation/removal operations.
+
+**Constructor:** `new Transaction(installation, cancellable?)` — create a
+transaction for the given `Installation`.
 
 **Key Methods:**
 
@@ -427,33 +412,24 @@ Related reference (dependencies).
 
 ### Memory Management
 
-Native objects are automatically garbage collected, but you can release the
-underlying handle eagerly rather than waiting for the GC.
-
-Every wrapper class implements `Symbol.dispose`, so the preferred approach is
-explicit resource management with `using` (TC39 stage 4; Node.js 24+). The
-object is freed automatically when the enclosing block exits, including when an
-error is thrown:
+Each class is a native `Napi::ObjectWrap`, and every instance owns a reference
+to its underlying Flatpak GObject. That reference is dropped automatically when
+the JavaScript object is garbage collected, so there is nothing to free by hand:
 
 ```javascript
-function describeInstallation() {
-    using installation = getSystemInstallation();
-    console.log(installation.getDisplayName());
-    // installation is freed here, even if the line above throws
-}
+const [installation] = getSystemInstallations();
+console.log(installation.getDisplayName());
+// The native GObject is released when `installation` is garbage collected.
 ```
 
-You can also call `free()` directly:
+Objects returned from the library (for example the elements of
+`listInstalledRefs()` or `listRemotes()`) are real instances of their class, so
+`instanceof` works and they are managed the same way:
 
 ```javascript
-const installation = getSystemInstallation();
-// ... use installation ...
-installation.free(); // Explicit cleanup
+const remotes = installation.listRemotes();
+console.log(remotes.every((r) => r instanceof Remote)); // true
 ```
-
-After `free()` (or after a `using` binding goes out of scope) the wrapper must
-not be used again. Either way, if you do nothing the object is cleaned up when
-it is garbage collected.
 
 ## Building from Source
 
