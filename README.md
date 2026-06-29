@@ -139,32 +139,6 @@ addFlathubRemote().catch(console.error);
 
 ```javascript
 const { getSystemInstallation, Transaction } = require("libflatpak");
-const https = require("https"); // or const http = require('http')
-
-async function fetchFlatpakref(url) {
-    return new Promise((resolve, reject) => {
-        https
-            .get(url, (response) => {
-                if (response.statusCode !== 200) {
-                    reject(
-                        new Error(
-                            `Failed to fetch flatpakref: ${response.statusCode}`,
-                        ),
-                    );
-                    return;
-                }
-
-                const chunks = [];
-                response.on("data", (chunk) => chunks.push(chunk));
-                response.on("end", () => {
-                    const buffer = Buffer.concat(chunks);
-                    resolve(buffer);
-                });
-                response.on("error", reject);
-            })
-            .on("error", reject);
-    });
-}
 
 async function installApplication(appId) {
     const installation = getSystemInstallation();
@@ -177,7 +151,7 @@ async function installApplication(appId) {
         const flatpakrefUrl = `https://dl.flathub.org/repo/appstream/${appId}.flatpakref`;
         console.log(`Downloading ${flatpakrefUrl}...`);
 
-        const flatpakrefData = await fetchFlatpakref(flatpakrefUrl);
+        const flatpakrefData = await fetch(flatpakrefUrl).then(res => res.bytes());
 
         // Create a transaction for this installation
         const transaction = Transaction.create(installation, null);
