@@ -143,6 +143,18 @@ class BundleRef {
   get _native() {
     return this._handle;
   }
+
+  free() {
+    // Drop our reference to the native handle so the underlying
+    // GObject can be unref'd by the external finalizer. After this
+    // the wrapper must not be used again.
+    this._handle = null;
+  }
+
+  // Explicit resource management: enables `using x = ...` syntax.
+  [Symbol.dispose]() {
+    this.free();
+  }
 }
 
 BundleRef.create = function(file) {
@@ -515,6 +527,18 @@ class Installation {
   get _native() {
     return this._handle;
   }
+
+  free() {
+    // Drop our reference to the native handle so the underlying
+    // GObject can be unref'd by the external finalizer. After this
+    // the wrapper must not be used again.
+    this._handle = null;
+  }
+
+  // Explicit resource management: enables `using x = ...` syntax.
+  [Symbol.dispose]() {
+    this.free();
+  }
 }
 
 Installation.create = function(path, user, cancellable) {
@@ -804,6 +828,18 @@ class InstalledRef {
   get _native() {
     return this._handle;
   }
+
+  free() {
+    // Drop our reference to the native handle so the underlying
+    // GObject can be unref'd by the external finalizer. After this
+    // the wrapper must not be used again.
+    this._handle = null;
+  }
+
+  // Explicit resource management: enables `using x = ...` syntax.
+  [Symbol.dispose]() {
+    this.free();
+  }
 }
 
 
@@ -870,6 +906,18 @@ class Instance {
 
   get _native() {
     return this._handle;
+  }
+
+  free() {
+    // Drop our reference to the native handle so the underlying
+    // GObject can be unref'd by the external finalizer. After this
+    // the wrapper must not be used again.
+    this._handle = null;
+  }
+
+  // Explicit resource management: enables `using x = ...` syntax.
+  [Symbol.dispose]() {
+    this.free();
   }
 }
 
@@ -970,6 +1018,18 @@ class Ref {
 
   get _native() {
     return this._handle;
+  }
+
+  free() {
+    // Drop our reference to the native handle so the underlying
+    // GObject can be unref'd by the external finalizer. After this
+    // the wrapper must not be used again.
+    this._handle = null;
+  }
+
+  // Explicit resource management: enables `using x = ...` syntax.
+  [Symbol.dispose]() {
+    this.free();
   }
 }
 
@@ -1114,6 +1174,18 @@ class RelatedRef {
 
   get _native() {
     return this._handle;
+  }
+
+  free() {
+    // Drop our reference to the native handle so the underlying
+    // GObject can be unref'd by the external finalizer. After this
+    // the wrapper must not be used again.
+    this._handle = null;
+  }
+
+  // Explicit resource management: enables `using x = ...` syntax.
+  [Symbol.dispose]() {
+    this.free();
   }
 }
 
@@ -1318,6 +1390,18 @@ class Remote {
   get _native() {
     return this._handle;
   }
+
+  free() {
+    // Drop our reference to the native handle so the underlying
+    // GObject can be unref'd by the external finalizer. After this
+    // the wrapper must not be used again.
+    this._handle = null;
+  }
+
+  // Explicit resource management: enables `using x = ...` syntax.
+  [Symbol.dispose]() {
+    this.free();
+  }
 }
 
 Remote.create = function(name) {
@@ -1500,6 +1584,18 @@ class RemoteRef {
 
   get _native() {
     return this._handle;
+  }
+
+  free() {
+    // Drop our reference to the native handle so the underlying
+    // GObject can be unref'd by the external finalizer. After this
+    // the wrapper must not be used again.
+    this._handle = null;
+  }
+
+  // Explicit resource management: enables `using x = ...` syntax.
+  [Symbol.dispose]() {
+    this.free();
   }
 }
 
@@ -1709,6 +1805,18 @@ class Transaction {
   get _native() {
     return this._handle;
   }
+
+  free() {
+    // Drop our reference to the native handle so the underlying
+    // GObject can be unref'd by the external finalizer. After this
+    // the wrapper must not be used again.
+    this._handle = null;
+  }
+
+  // Explicit resource management: enables `using x = ...` syntax.
+  [Symbol.dispose]() {
+    this.free();
+  }
 }
 
 Transaction.create = function(installation, cancellable) {
@@ -1801,6 +1909,18 @@ class TransactionOperation {
   get _native() {
     return this._handle;
   }
+
+  free() {
+    // Drop our reference to the native handle so the underlying
+    // GObject can be unref'd by the external finalizer. After this
+    // the wrapper must not be used again.
+    this._handle = null;
+  }
+
+  // Explicit resource management: enables `using x = ...` syntax.
+  [Symbol.dispose]() {
+    this.free();
+  }
 }
 
 
@@ -1842,6 +1962,18 @@ class TransactionProgress {
 
   get _native() {
     return this._handle;
+  }
+
+  free() {
+    // Drop our reference to the native handle so the underlying
+    // GObject can be unref'd by the external finalizer. After this
+    // the wrapper must not be used again.
+    this._handle = null;
+  }
+
+  // Explicit resource management: enables `using x = ...` syntax.
+  [Symbol.dispose]() {
+    this.free();
   }
 }
 

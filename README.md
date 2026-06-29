@@ -27,7 +27,7 @@ npm install libflatpak
 ### Basic System Information
 
 ```javascript
-const { getDefaultArch, getSystemInstallations } = require("libflatpak");
+import { getDefaultArch, getSystemInstallations } from "libflatpak";
 
 // Get system information
 const arch = getDefaultArch();
@@ -47,7 +47,7 @@ if (installations.length > 0) {
 ### Working with Installations
 
 ```javascript
-const { getSystemInstallations } = require("libflatpak");
+import { getSystemInstallations } from "libflatpak";
 
 // Get available installations
 const installations = getSystemInstallations();
@@ -92,43 +92,39 @@ try {
 ### Example 1: Adding a Remote Repository
 
 ```javascript
-const { getSystemInstallation, Remote } = require("libflatpak");
+import { getSystemInstallation, Remote } from "libflatpak";
 
 async function addFlathubRemote() {
-    const installation = getSystemInstallation();
+    // `using` automatically frees these when the block exits (including on
+    // error), so there is no need for an explicit try/finally + free().
+    using installation = getSystemInstallation();
     if (!installation) {
         throw new Error("No system installation available");
     }
 
-    try {
-        // Create a new remote object
-        const remote = Remote.create("flathub");
+    // Create a new remote object
+    using remote = Remote.create("flathub");
 
-        // Configure the remote
-        remote.setUrl("https://dl.flathub.org/repo/");
-        remote.setTitle("Flathub");
-        remote.setComment("The central repository for Flatpak applications");
-        remote.setGpgVerify(true);
-        remote.setNoenumerate(false);
-        remote.setDisabled(false);
+    // Configure the remote
+    remote.setUrl("https://dl.flathub.org/repo/");
+    remote.setTitle("Flathub");
+    remote.setComment("The central repository for Flatpak applications");
+    remote.setGpgVerify(true);
+    remote.setNoenumerate(false);
+    remote.setDisabled(false);
 
-        // Add the remote to the installation
-        const added = installation.addRemote(remote, false, null);
-        if (added) {
-            console.log("Successfully added Flathub remote");
+    // Add the remote to the installation
+    const added = installation.addRemote(remote, false, null);
+    if (added) {
+        console.log("Successfully added Flathub remote");
 
-            // Update remote metadata
-            const updated = installation.updateRemoteSync("flathub", null);
-            if (updated) {
-                console.log("Remote metadata updated successfully");
-            }
-        } else {
-            console.log("Remote already exists or addition failed");
+        // Update remote metadata
+        const updated = installation.updateRemoteSync("flathub", null);
+        if (updated) {
+            console.log("Remote metadata updated successfully");
         }
-
-        remote.free();
-    } finally {
-        installation.free();
+    } else {
+        console.log("Remote already exists or addition failed");
     }
 }
 
@@ -138,7 +134,7 @@ addFlathubRemote().catch(console.error);
 ### Example 2: Installing a Package
 
 ```javascript
-const { getSystemInstallation, Transaction } = require("libflatpak");
+import { getSystemInstallation, Transaction } from "libflatpak";
 
 async function installApplication(appId) {
     const installation = getSystemInstallation();
@@ -202,8 +198,9 @@ async function installApplication(appId) {
 }
 
 // Alternative: Install from a local .flatpakref file
+import { readFileSync } from "node:fs";
+
 async function installFromLocalFile(filePath) {
-    const { readFileSync } = require("fs");
     const installation = getSystemInstallation();
     if (!installation) {
         throw new Error("No system installation available");
@@ -239,7 +236,7 @@ async function installFromLocalFile(filePath) {
 ### Example 3: Getting App Data for Store
 
 ```javascript
-const { getSystemInstallation } = require("libflatpak");
+import { getSystemInstallation } from "libflatpak";
 
 async function getAppStoreData() {
     const installation = getSystemInstallation();
@@ -430,7 +427,23 @@ Related reference (dependencies).
 
 ### Memory Management
 
-Native objects are automatically garbage collected, but you can explicitly free them:
+Native objects are automatically garbage collected, but you can release the
+underlying handle eagerly rather than waiting for the GC.
+
+Every wrapper class implements `Symbol.dispose`, so the preferred approach is
+explicit resource management with `using` (TC39 stage 4; Node.js 24+). The
+object is freed automatically when the enclosing block exits, including when an
+error is thrown:
+
+```javascript
+function describeInstallation() {
+    using installation = getSystemInstallation();
+    console.log(installation.getDisplayName());
+    // installation is freed here, even if the line above throws
+}
+```
+
+You can also call `free()` directly:
 
 ```javascript
 const installation = getSystemInstallation();
@@ -438,7 +451,9 @@ const installation = getSystemInstallation();
 installation.free(); // Explicit cleanup
 ```
 
-Or rely on automatic cleanup when objects go out of scope.
+After `free()` (or after a `using` binding goes out of scope) the wrapper must
+not be used again. Either way, if you do nothing the object is cleaned up when
+it is garbage collected.
 
 ## Building from Source
 
